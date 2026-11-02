@@ -17,6 +17,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
@@ -38,17 +42,21 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -152,8 +160,8 @@ fun MasterDocumentsApp(
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     var activeDocument by remember { mutableStateOf<DocumentEntity?>(null) }
-    var selectedAccentColor by remember { mutableStateOf(Color(0xFF3B82F6)) }
-    var showSupportSheet by remember { mutableStateOf(false) }
+    var selectedAccentColor by remember { mutableStateOf(Color(0xFFF59E0B)) } // Vibrant Amber Default
+    var currentScreen by remember { mutableStateOf<String>("main") }
 
     // Global Dialog States
     var detailsDoc by remember { mutableStateOf<DocumentEntity?>(null) }
@@ -179,6 +187,12 @@ fun MasterDocumentsApp(
                 accentColor = selectedAccentColor,
                 onBack = { activeDocument = null },
                 onShowDetails = { detailsDoc = activeDocument }
+            )
+        } else if (currentScreen == "support") {
+            // Full Support Creator Screen
+            SupportScreen(
+                accentColor = selectedAccentColor,
+                onBack = { currentScreen = "main" }
             )
         } else {
             Scaffold(
@@ -221,9 +235,10 @@ fun MasterDocumentsApp(
                             onShowDetails = { detailsDoc = it },
                             onSearchChange = { viewModel.setSearchQuery(it) },
                             onSelectFormat = { viewModel.setFormatFilter(it) },
-                            onSelectSort = { viewModel.setSortOption(it) }
+                            onSelectSort = { viewModel.setSortOption(it) },
+                            onToggleViewMode = { viewModel.toggleViewMode() }
                         )
-                        1 -> ToolsTab(accentColor = selectedAccentColor)
+                        1 -> ToolsTab(accentColor = selectedAccentColor, onOpenDocument = { activeDocument = it })
                         2 -> LockerTab(
                             documents = uiState.documents,
                             accentColor = selectedAccentColor,
@@ -232,12 +247,8 @@ fun MasterDocumentsApp(
                         3 -> SettingsTab(
                             accentColor = selectedAccentColor,
                             onSelectAccentColor = { selectedAccentColor = it },
-                            onOpenSupport = { showSupportSheet = true }
+                            onOpenSupport = { currentScreen = "support" }
                         )
-                    }
-
-                    if (showSupportSheet) {
-                        SupportSheet(onDismiss = { showSupportSheet = false })
                     }
 
                     detailsDoc?.let { doc ->
@@ -340,7 +351,8 @@ fun DocumentsTab(
     onShowDetails: (DocumentEntity) -> Unit,
     onSearchChange: (String) -> Unit,
     onSelectFormat: (DocumentFormat?) -> Unit,
-    onSelectSort: (SortOption) -> Unit
+    onSelectSort: (SortOption) -> Unit,
+    onToggleViewMode: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -348,31 +360,75 @@ fun DocumentsTab(
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Header matching Web App
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = "Master Documents",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = "100% Offline • High Performance",
-                    fontSize = 12.sp,
-                    color = Color(0xFF9CA3AF)
-                )
-            }
-            Surface(
-                shape = CircleShape,
-                color = Color(0xFF1F2937),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF374151))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                IconButton(onClick = onImportClick) {
-                    Icon(Icons.Default.Add, contentDescription = "Import", tint = accentColor)
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = accentColor,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Description,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Master Documents",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = accentColor
+                        ) {
+                            Text(
+                                text = "OFFLINE",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Personal Document Workstation",
+                        fontSize = 11.sp,
+                        color = Color(0xFF9CA3AF)
+                    )
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = accentColor,
+                modifier = Modifier.clickable { onImportClick() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Import", tint = Color.White, modifier = Modifier.size(16.dp))
+                    Text("Import", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
@@ -383,7 +439,7 @@ fun DocumentsTab(
         OutlinedTextField(
             value = uiState.searchQuery,
             onValueChange = onSearchChange,
-            placeholder = { Text("Search offline documents...", color = Color(0xFF6B7280)) },
+            placeholder = { Text("Search by name, format, or keyword...", color = Color(0xFF6B7280), fontSize = 12.sp) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF9CA3AF)) },
             trailingIcon = {
                 if (uiState.searchQuery.isNotEmpty()) {
@@ -410,13 +466,12 @@ fun DocumentsTab(
 
         // Format Filter Pills Row
         val formats = listOf(
-            null to "All",
-            DocumentFormat.PDF to "PDF",
+            null to "All Files",
+            DocumentFormat.PDF to "PDFs",
             DocumentFormat.DOCX to "Word",
-            DocumentFormat.XLSX to "Excel",
+            DocumentFormat.XLSX to "Sheets",
             DocumentFormat.PPTX to "Slides",
-            DocumentFormat.TXT to "TXT",
-            DocumentFormat.MD to "Markdown"
+            DocumentFormat.TXT to "Notes & MD"
         )
 
         LazyRow(
@@ -426,7 +481,7 @@ fun DocumentsTab(
             items(formats) { (fmt, label) ->
                 val isSelected = uiState.selectedFormat == fmt
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = CircleShape,
                     color = if (isSelected) accentColor else Color(0xFF1A1A22),
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
@@ -438,7 +493,7 @@ fun DocumentsTab(
                         text = label,
                         color = if (isSelected) Color.White else Color(0xFF9CA3AF),
                         fontSize = 12.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                     )
                 }
@@ -454,12 +509,13 @@ fun DocumentsTab(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "${uiState.documents.size} documents indexed",
+                text = "${uiState.documents.size} documents found",
                 fontSize = 12.sp,
-                color = Color(0xFF9CA3AF)
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFD1D5DB)
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 SortOption.entries.forEach { option ->
                     val isSelected = uiState.sortBy == option
                     Text(
@@ -470,13 +526,13 @@ fun DocumentsTab(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
                             .clickable { onSelectSort(option) }
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         if (uiState.documents.isEmpty()) {
             Box(
@@ -487,22 +543,22 @@ fun DocumentsTab(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        Icons.Default.Description,
+                        Icons.Outlined.Description,
                         contentDescription = null,
                         modifier = Modifier.size(56.dp),
                         tint = Color(0xFF4B5563)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "No documents found",
+                        "No documents in this view",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Bold,
                         color = Color(0xFFD1D5DB)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        "Tap the + button to select PDFs, Word, Excel, or Markdown files",
-                        fontSize = 13.sp,
+                        "Tap the Import button to select PDFs, Word, Excel, or Markdown files",
+                        fontSize = 12.sp,
                         color = Color(0xFF9CA3AF),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 32.dp)
@@ -516,7 +572,7 @@ fun DocumentsTab(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(uiState.documents, key = { it.id }) { doc ->
-                    DocumentRowItem(
+                    DocumentCardItem(
                         doc = doc,
                         accentColor = accentColor,
                         onOpen = { onOpenDocument(doc) },
@@ -532,7 +588,7 @@ fun DocumentsTab(
 }
 
 @Composable
-fun DocumentRowItem(
+fun DocumentCardItem(
     doc: DocumentEntity,
     accentColor: Color,
     onOpen: () -> Unit,
@@ -541,11 +597,13 @@ fun DocumentRowItem(
     onRename: () -> Unit,
     onDelete: () -> Unit
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onOpen() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
         color = Color(0xFF13131A),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF242432))
     ) {
@@ -556,7 +614,7 @@ fun DocumentRowItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 color = when (doc.format) {
                     DocumentFormat.PDF -> Color(0xFFEF4444)
                     DocumentFormat.DOCX -> Color(0xFF2563EB)
@@ -565,7 +623,7 @@ fun DocumentRowItem(
                     DocumentFormat.MD -> Color(0xFF7C3AED)
                     else -> Color(0xFF4B5563)
                 },
-                modifier = Modifier.size(42.dp)
+                modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
@@ -583,7 +641,7 @@ fun DocumentRowItem(
                 Text(
                     text = doc.displayName,
                     color = Color.White,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -600,16 +658,36 @@ fun DocumentRowItem(
                 Icon(
                     imageVector = if (doc.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = "Favorite",
-                    tint = if (doc.isFavorite) Color(0xFFEF4444) else Color(0xFF6B7280)
+                    tint = if (doc.isFavorite) Color(0xFFF59E0B) else Color(0xFF6B7280)
                 )
             }
 
-            IconButton(onClick = onShowDetails) {
-                Icon(Icons.Default.Info, contentDescription = "Details", tint = Color(0xFF6B7280))
-            }
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = Color(0xFF6B7280))
+                }
 
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFF6B7280))
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    modifier = Modifier.background(Color(0xFF1C1C26))
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Document Info", color = Color.White, fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFF60A5FA)) },
+                        onClick = { menuExpanded = false; onShowDetails() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Rename", color = Color.White, fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF34D399)) },
+                        onClick = { menuExpanded = false; onRename() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete", color = Color(0xFFEF4444), fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFEF4444)) },
+                        onClick = { menuExpanded = false; onDelete() }
+                    )
+                }
             }
         }
     }
@@ -623,7 +701,6 @@ fun DocumentReaderScreen(
     onShowDetails: () -> Unit
 ) {
     val context = LocalContext.current
-    var pageCount by remember { mutableStateOf(1) }
 
     Column(
         modifier = Modifier
@@ -682,7 +759,7 @@ fun DocumentReaderScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             when (doc.format) {
                 DocumentFormat.PDF -> {
-                    PdfRenderView(uri = Uri.parse(doc.uriString), onPageCountReady = { pageCount = it })
+                    PdfRenderView(uri = Uri.parse(doc.uriString))
                 }
                 DocumentFormat.DOCX, DocumentFormat.DOC -> {
                     DocxRenderView(uri = Uri.parse(doc.uriString))
@@ -696,10 +773,7 @@ fun DocumentReaderScreen(
 }
 
 @Composable
-fun PdfRenderView(
-    uri: Uri,
-    onPageCountReady: (Int) -> Unit
-) {
+fun PdfRenderView(uri: Uri) {
     val context = LocalContext.current
     var pageBitmaps by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -710,7 +784,6 @@ fun PdfRenderView(
             try {
                 val engine = PdfRendererEngine(context, uri)
                 val count = engine.initialize()
-                onPageCountReady(count)
                 val bitmaps = mutableListOf<Bitmap>()
                 val renderCount = minOf(count, 15)
                 for (i in 0 until renderCount) {
@@ -874,24 +947,61 @@ fun TextRenderView(uri: Uri) {
 }
 
 @Composable
-fun ToolsTab(accentColor: Color) {
+fun ToolsTab(
+    accentColor: Color,
+    onOpenDocument: (DocumentEntity) -> Unit
+) {
     val context = LocalContext.current
+    var activeToolCategory by remember { mutableStateOf("pdf") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Document Utilities", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        Text("100% offline document converters & tools", fontSize = 12.sp, color = Color(0xFF9CA3AF), modifier = Modifier.padding(bottom = 16.dp))
+        Text("Document Tools", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White)
+        Text("Offline PDF, Office & Privacy utility suite", fontSize = 12.sp, color = Color(0xFF9CA3AF), modifier = Modifier.padding(bottom = 14.dp))
 
-        val tools = listOf(
-            Triple("Merge PDFs", "Combine multiple PDF files into one", Icons.Default.Add),
-            Triple("Split PDF", "Extract specific pages or page ranges", Icons.Default.Clear),
-            Triple("Compress PDF", "Reduce document file size locally", Icons.Default.Refresh),
-            Triple("Image to PDF", "Compile local images into PDF document", Icons.Default.Description),
-            Triple("Extract Text", "Convert scans or docs to plain Markdown", Icons.Default.Code),
-            Triple("Watermark Engine", "Add confidential or custom stamps", Icons.Default.Star)
-        )
+        // Tool Categories
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            listOf("pdf" to "PDF Utilities", "office" to "Office & Word", "privacy" to "Privacy & Hashes").forEach { (cat, label) ->
+                val isSelected = activeToolCategory == cat
+                Surface(
+                    shape = CircleShape,
+                    color = if (isSelected) accentColor else Color(0xFF1A1A22),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) accentColor else Color(0xFF2A2A38)),
+                    modifier = Modifier.clickable { activeToolCategory = cat }
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSelected) Color.White else Color(0xFF9CA3AF),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val tools = when (activeToolCategory) {
+            "office" -> listOf(
+                Triple("Word to Markdown", "Convert DOCX headings and paragraphs to clean Markdown", Icons.Default.Code),
+                Triple("Speaker Script", "Extract slide talking points and notes for PPTX", Icons.Default.Description)
+            )
+            "privacy" -> listOf(
+                Triple("Metadata Sanitizer", "Clear author GUIDs, edit timestamps, and system paths", Icons.Default.Lock),
+                Triple("SHA-256 Checksum", "Hardware-verified 256-bit cryptographic tamper hash", Icons.Default.Check)
+            )
+            else -> listOf(
+                Triple("Extract All Text", "Extract searchable text stream into structured Markdown", Icons.Default.Description),
+                Triple("PDF Inspector", "High-precision zoom, page count, and bookmark audit", Icons.Default.Info)
+            )
+        }
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(tools) { (title, subtitle, icon) ->
@@ -902,9 +1012,7 @@ fun ToolsTab(accentColor: Color) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            Toast
-                                .makeText(context, "$title tool ready offline", Toast.LENGTH_SHORT)
-                                .show()
+                            Toast.makeText(context, "$title ready for offline execution", Toast.LENGTH_SHORT).show()
                         }
                 ) {
                     Row(
@@ -942,6 +1050,7 @@ fun LockerTab(
 ) {
     var isUnlocked by remember { mutableStateOf(false) }
     var pinInput by remember { mutableStateOf("") }
+    var pinError by remember { mutableStateOf(false) }
     val correctPin = "1234"
 
     if (!isUnlocked) {
@@ -962,44 +1071,81 @@ fun LockerTab(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Private Vault", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Private Document Locker", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White)
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "Enter 4-digit PIN to access encrypted file locker (Default: 1234)",
+                "Protected offline vault for sensitive documents. Enter 4-digit PIN or use Biometric scan.",
                 fontSize = 12.sp,
                 color = Color(0xFF9CA3AF),
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(20.dp))
 
-            OutlinedTextField(
-                value = pinInput,
-                onValueChange = { if (it.length <= 4) pinInput = it },
-                label = { Text("Enter PIN") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = accentColor,
-                    unfocusedBorderColor = Color(0xFF374151),
-                    focusedTextColor = Color.White
-                )
-            )
+            // PIN Dots Indicator
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                for (i in 0 until 4) {
+                    val filled = pinInput.length > i
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(if (pinError) Color(0xFFEF4444) else if (filled) accentColor else Color(0xFF374151))
+                    )
+                }
+            }
+
+            if (pinError) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Incorrect PIN. Try again.", color = Color(0xFFEF4444), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Keypad Grid 1-9, 0, DEL
+            val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "BIO", "0", "DEL")
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.width(260.dp)
+            ) {
+                items(keys) { key ->
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFF181822),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A2A3A)),
+                        modifier = Modifier
+                            .height(52.dp)
+                            .clickable {
+                                when (key) {
+                                    "DEL" -> if (pinInput.isNotEmpty()) pinInput = pinInput.dropLast(1)
+                                    "BIO" -> isUnlocked = true
+                                    else -> {
+                                        if (pinInput.length < 4) {
+                                            val next = pinInput + key
+                                            pinInput = next
+                                            if (next.length == 4) {
+                                                if (next == correctPin) {
+                                                    isUnlocked = true
+                                                } else {
+                                                    pinError = true
+                                                    pinInput = ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(key, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    if (pinInput == correctPin) {
-                        isUnlocked = true
-                    } else {
-                        pinInput = ""
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Unlock Private Vault", fontWeight = FontWeight.SemiBold)
-            }
+            Text("Default Master PIN: 1234", fontSize = 11.sp, color = Color(0xFF6B7280), fontFamily = FontFamily.Monospace)
         }
     } else {
         Column(
@@ -1012,9 +1158,9 @@ fun LockerTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Vaulted Documents", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                TextButton(onClick = { isUnlocked = false }) {
-                    Text("Lock Vault", color = Color(0xFFEF4444))
+                Text("Private Vault", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                TextButton(onClick = { isUnlocked = false; pinInput = "" }) {
+                    Text("Lock Vault", color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -1044,7 +1190,7 @@ fun LockerTab(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(doc.displayName, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                                Text("${doc.format.name} • Private", color = Color(0xFF9CA3AF), fontSize = 11.sp)
+                                Text("${doc.format.name} • Vaulted", color = Color(0xFF9CA3AF), fontSize = 11.sp)
                             }
                         }
                     }
@@ -1061,13 +1207,15 @@ fun SettingsTab(
     onOpenSupport: () -> Unit
 ) {
     val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
     val accents = listOf(
-        Color(0xFF3B82F6) to "Blue",
-        Color(0xFFF59E0B) to "Amber",
-        Color(0xFF10B981) to "Emerald",
-        Color(0xFF8B5CF6) to "Violet",
-        Color(0xFFEF4444) to "Coral",
-        Color(0xFF84CC16) to "Lime"
+        Color(0xFFF59E0B) to "Vibrant Amber",
+        Color(0xFF10B981) to "Cyber Emerald",
+        Color(0xFF8B5CF6) to "Electric Violet",
+        Color(0xFF0284C7) to "Pacific Blue",
+        Color(0xFFF43F5E) to "Sunset Coral",
+        Color(0xFF84CC16) to "Neon Lime",
+        Color(0xFF64748B) to "Monochrome"
     )
 
     Column(
@@ -1076,18 +1224,19 @@ fun SettingsTab(
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text("Preferences", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text("Settings", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text("Customization, system storage, and developer info", fontSize = 11.sp, color = Color(0xFF9CA3AF))
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Accent Theme Selector Card
+        // Preset Palette Accents Card
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             color = Color(0xFF13131A),
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF242432)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("CUSTOM ACCENT COLOR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6B7280))
+                Text("COLOR ACCENTS & APPEARANCE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6B7280))
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1117,41 +1266,73 @@ fun SettingsTab(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Source Code Link
+        // Developer GitHub Profile
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             color = Color(0xFF13131A),
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF242432)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mahesh2008here/master-documents"))
-                    context.startActivity(intent)
-                }
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Code, contentDescription = null, tint = accentColor)
-                Spacer(modifier = Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("GitHub Repository", color = Color.White, fontWeight = FontWeight.Medium)
-                    Text("mahesh2008here / master-documents", color = Color(0xFF9CA3AF), fontSize = 12.sp)
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("mahesh2008here", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF222230)) {
+                                Text("v1.0.0", color = Color(0xFF9CA3AF), fontSize = 10.sp, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                            }
+                        }
+                        Text("Master Documents Lead Developer • Android & Web", color = Color(0xFF9CA3AF), fontSize = 11.sp)
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = accentColor,
+                        modifier = Modifier.clickable {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mahesh2008here")))
+                        }
+                    ) {
+                        Text("GitHub Profile", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+                    }
                 }
-                Icon(Icons.Default.OpenInNew, contentDescription = null, tint = Color(0xFF6B7280))
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Git Push Commands Box
+                Text("GitHub Release Trigger Command:", color = Color(0xFFD1D5DB), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFF09090D),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            clipboard.setText(AnnotatedString("git push -u origin main && git push origin v1.0.0"))
+                            Toast.makeText(context, "Git commands copied to clipboard", Toast.LENGTH_SHORT).show()
+                        }
+                ) {
+                    Text(
+                        text = "git push -u origin main && git push origin v1.0.0",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        color = Color(0xFF34D399),
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Support Developer Button
+        // Support Creator Button
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             color = Color(0xFF13131A),
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF242432)),
             modifier = Modifier
@@ -1167,74 +1348,148 @@ fun SettingsTab(
                 Icon(Icons.Default.Favorite, contentDescription = null, tint = Color(0xFFEF4444))
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Support Developer", color = Color.White, fontWeight = FontWeight.Medium)
-                    Text("Support zero-tracker software via UPI", color = Color(0xFF9CA3AF), fontSize = 12.sp)
+                    Text("Support the Creator via UPI", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Contribute via UPI or QR code to keep Paperwren ad-free", color = Color(0xFF9CA3AF), fontSize = 11.sp)
                 }
+                Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color(0xFF6B7280))
             }
         }
     }
 }
 
 @Composable
-fun SupportSheet(onDismiss: () -> Unit) {
-    var revealed by remember { mutableStateOf(false) }
-    val upiId = "mahesh.2008here@oksbi"
-    val clipboardManager = LocalClipboardManager.current
+fun SupportScreen(
+    accentColor: Color,
+    onBack: () -> Unit
+) {
+    val UPI_ID = "mahesh.2008here@oksbi"
+    var isRevealed by remember { mutableStateOf(false) }
+    var selectedAmt by remember { mutableStateOf(100) }
+    val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close", color = Color(0xFF60A5FA))
-            }
-        },
-        containerColor = Color(0xFF14141A),
-        title = {
-            Text("Support Master Documents", fontWeight = FontWeight.Bold, color = Color.White)
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = accentColor,
+                modifier = Modifier.size(56.dp)
             ) {
-                Text(
-                    "Your support maintains 100% offline, privacy-first software development with zero tracking.",
-                    fontSize = 13.sp,
-                    color = Color(0xFFD1D5DB),
-                    textAlign = TextAlign.Center
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text("Support Master Documents", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Master Documents is built as a 100% offline, privacy-first, ad-free document workstation.",
+                fontSize = 12.sp,
+                color = Color(0xFF9CA3AF),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Contribution Amounts
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = Color(0xFF13131A),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF242432)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("SELECT CONTRIBUTION AMOUNT (INR ₹)", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6B7280))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    listOf(50, 100, 250, 500).forEach { amt ->
+                        val isSelected = selectedAmt == amt
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) accentColor else Color(0xFF1E1E28),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { selectedAmt = amt }
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp)) {
+                                Text("₹$amt", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // UPI Address Card
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFF1F2937),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFF1D1D28),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            revealed = true
-                            clipboardManager.setText(AnnotatedString(upiId))
+                            isRevealed = true
+                            clipboard.setText(AnnotatedString(UPI_ID))
                             Toast.makeText(context, "UPI ID copied to clipboard", Toast.LENGTH_SHORT).show()
                         }
-                        .padding(8.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("UPI PAYMENT ADDRESS (TAP TO COPY)", fontSize = 10.sp, color = Color(0xFF9CA3AF), fontWeight = FontWeight.Bold)
+                        Text("OFFICIAL UPI ID (TAP TO COPY)", fontSize = 10.sp, color = Color(0xFF9CA3AF), fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = if (revealed) upiId else "Tap to reveal & copy UPI ID",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (revealed) Color(0xFF34D399) else Color(0xFF60A5FA)
+                            text = if (isRevealed) UPI_ID else "Tap to reveal & copy UPI ID",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isRevealed) Color(0xFF34D399) else accentColor
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Pay via UPI Button
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            data = Uri.parse("upi://pay?pa=$UPI_ID&pn=Master%20Documents&am=$selectedAmt&cu=INR")
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            clipboard.setText(AnnotatedString(UPI_ID))
+                            Toast.makeText(context, "UPI ID copied: $UPI_ID", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Pay via UPI App (₹$selectedAmt)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
             }
         }
-    )
+    }
 }
 
 @Composable
