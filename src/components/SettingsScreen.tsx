@@ -18,9 +18,11 @@ import {
   Info,
   ChevronRight,
   Download,
-  GitBranch
+  GitBranch,
+  Loader2
 } from 'lucide-react';
 import { AppPreferences, ReaderTheme } from '../types/document';
+import { generateAndroidProjectZip } from '../services/androidProjectZip';
 
 interface SettingsScreenProps {
   preferences: AppPreferences;
@@ -36,10 +38,32 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onNavigateToSupport,
 }) => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isGeneratingZip, setIsGeneratingZip] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleDownloadAndroidZip = async () => {
+    try {
+      setIsGeneratingZip(true);
+      showToast('Bundling native Android Studio project...');
+      const blob = await generateAndroidProjectZip();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'paperwren-android-project.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded Android Studio project!');
+    } catch (err: any) {
+      showToast('Failed to generate zip: ' + (err?.message || 'Error'));
+    } finally {
+      setIsGeneratingZip(false);
+    }
   };
 
   const PRESET_ACCENTS = [
@@ -275,21 +299,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <span className="text-[10px] text-stone-400 font-mono">3 packages ready</span>
             </div>
 
-            {/* Asset 1: Full Source Code Archive */}
+            {/* Asset 1: Source Code on GitHub */}
             <div className="p-3 rounded-2xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
               <div>
                 <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                  <span>Source Code Archive (.zip)</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">276 KB</span>
+                  <span>Source Code Repository</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">GitHub</span>
                 </div>
                 <div className="text-[10px] text-stone-400">
-                  Full git repository with React 19 app, native Android project & configs
+                  Full git repository with React 19 web app, Android Kotlin project & CI/CD workflow
                 </div>
               </div>
 
               <a
-                href="/master-documents.zip"
-                download="master-documents-source-v1.0.0.zip"
+                href="https://github.com/mahesh2008here/master-documents/archive/refs/heads/main.zip"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all text-[11px] shrink-0"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -297,48 +322,53 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               </a>
             </div>
 
-            {/* Asset 2: Web Production Bundle */}
+            {/* Asset 2: GitHub Releases & APKs */}
             <div className="p-3 rounded-2xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
               <div>
                 <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                  <span>Compiled Web App Bundle (.zip)</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">1.2 MB</span>
+                  <span>GitHub Actions CI & APK Builds</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">Automated</span>
                 </div>
                 <div className="text-[10px] text-stone-400">
-                  Compiled, zero-dependency HTML/JS distribution ready for web hosting or PWA
+                  Compiled Debug & Release APKs generated automatically on push
                 </div>
               </div>
 
               <a
-                href="/master-documents-web.zip"
-                download="master-documents-web-v1.0.0.zip"
+                href="https://github.com/mahesh2008here/master-documents/actions"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all text-[11px] shrink-0"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Web Bundle</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>CI Artifacts</span>
               </a>
             </div>
 
-            {/* Asset 3: Native Android Project */}
+            {/* Asset 3: Native Android Project Zip */}
             <div className="p-3 rounded-2xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
               <div>
                 <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
                   <span>Android Studio Project (.zip)</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">14 KB</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">In-Browser Pack</span>
                 </div>
                 <div className="text-[10px] text-stone-400">
-                  Native Kotlin Jetpack Compose app, Room DB, SAF file picker, PdfRenderer
+                  Instant client-side zip: Kotlin Compose, Room DB, SAF file picker, PdfRenderer
                 </div>
               </div>
 
-              <a
-                href="/master-documents-android.zip"
-                download="master-documents-android-v1.0.0.zip"
-                className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all text-[11px] shrink-0"
+              <button
+                onClick={handleDownloadAndroidZip}
+                disabled={isGeneratingZip}
+                className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all text-[11px] shrink-0 disabled:opacity-50"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Android App</span>
-              </a>
+                {isGeneratingZip ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span>{isGeneratingZip ? 'Generating...' : 'Android App'}</span>
+              </button>
             </div>
           </div>
 

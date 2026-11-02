@@ -1,8 +1,37 @@
+# Dependencies
 node_modules/
-build/
+bun.lock
+
+# Build outputs
 dist/
+build/
 coverage/
-.DS_Store
+
+# Android & Gradle caches & outputs
+.gradle/
+android/.gradle/
+android/build/
+android/app/build/
+android/.idea/
+android/*.iml
+android/app/*.iml
+android/local.properties
+android/captures/
+android/.cxx/
+
+# Binary packages & archives
+*.zip
+*.tar.gz
+*.apk
+*.aab
+release-apks/
+.tools/
+
+# Logs & temp
 *.log
+.DS_Store
 .env*
 !.env.example
+public/assets/aistudio/
+
+
