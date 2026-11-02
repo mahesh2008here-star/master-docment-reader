@@ -106,17 +106,20 @@ jobs:
           retention-days: 30
 
       - name: Publish APKs to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true' || github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: "v1.0.0"
+          name: "Master Documents Release v1.0.0"
           files: |
-            release-apks/MasterDocuments-v1.0.0-debug.apk
-            release-apks/MasterDocuments-v1.0.0-release.apk
+            release-apks/*.apk
             RELEASE.md
           generate_release_notes: true
-          name: "Master Documents Release ${{ github.ref_name || 'v1.0.0' }}"
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   build-web:
     name: Build Web Production App
