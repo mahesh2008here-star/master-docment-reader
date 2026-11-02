@@ -342,19 +342,31 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </div>
           </div>
 
-          {/* Quick Git Push Terminal Command Helper */}
+          {/* GitHub Actions CI/CD Automated APK Builder */}
           <div className="pt-2 border-t border-stone-200/60 dark:border-stone-800/60 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
                 <GitBranch className="w-3.5 h-3.5" style={{ color: currentAccent }} />
-                <span>Push Release to GitHub</span>
+                <span>GitHub Actions APK Builder (.github/workflows/main.yml)</span>
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                Auto-Build CI Ready
+              </span>
+            </div>
+            <p className="text-[11px] text-stone-400 leading-relaxed">
+              When pushed to GitHub, the workflow automatically spins up an Android Ubuntu runner with JDK 17, compiles the native Android app with Gradle, and attaches <strong>MasterDocuments-v1.0.0-release.apk</strong> and <strong>MasterDocuments-v1.0.0-debug.apk</strong> directly to the GitHub Release.
+            </p>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] font-semibold text-stone-700 dark:text-stone-300">
+                Push Commands to Trigger Build:
               </span>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    'git remote add origin https://github.com/mahesh2008here/master-documents.git && git push -u origin main && git push origin v1.0.0'
+                    'git push -u origin main && git push origin v1.0.0'
                   );
-                  showToast('Git commands copied to clipboard!');
+                  showToast('Git push commands copied to clipboard!');
                 }}
                 className="text-[10px] font-semibold text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:underline"
               >
