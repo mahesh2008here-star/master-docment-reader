@@ -215,24 +215,36 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </div>
       </div>
 
-      {/* Section 3: Developer GitHub Profile Card */}
+      {/* Section 3: Releases & Developer GitHub */}
       <div className="space-y-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-stone-400 px-1">
-          Developer & Open Source
-        </h2>
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-stone-400">
+            Release v1.0.0 & Source Code
+          </h2>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Latest Production Release
+          </span>
+        </div>
 
         <div className="droplert-card rounded-3xl p-5 shadow-sm space-y-4 text-xs">
+          {/* Developer Profile Header */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-stone-900 dark:bg-stone-800 text-white flex items-center justify-center shadow-md">
                 <Github className="w-6 h-6" />
               </div>
               <div>
-                <div className="font-bold text-sm text-stone-900 dark:text-stone-100">
-                  mahesh2008here
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm text-stone-900 dark:text-stone-100">
+                    mahesh2008here
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-[10px] font-mono text-stone-500">
+                    v1.0.0
+                  </span>
                 </div>
                 <div className="text-[11px] text-stone-400">
-                  Master Documents Lead Developer
+                  Master Documents Lead Developer • Android & Web
                 </div>
               </div>
             </div>
@@ -250,33 +262,115 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </div>
 
           <p className="text-stone-600 dark:text-stone-300 text-[11px] leading-relaxed">
-            Follow the latest commits, report issues, and inspect repository releases directly on GitHub.
+            All code and production distributions are packaged, tagged with <strong>v1.0.0</strong>, and ready for offline use or GitHub publishing.
           </p>
 
-          {/* 1-Click Codebase Download */}
-          <div className="pt-2 border-t border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
-            <div>
-              <div className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+          {/* Release Download Packages */}
+          <div className="pt-2 border-t border-stone-200/60 dark:border-stone-800/60 space-y-2.5">
+            <div className="font-semibold text-stone-800 dark:text-stone-200 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
                 <Download className="w-3.5 h-3.5" style={{ color: currentAccent }} />
-                <span>Download Source Archive</span>
+                <span>Download Release Assets</span>
               </div>
-              <div className="text-[10px] text-stone-400">
-                Complete React & Native Android project (.ZIP)
-              </div>
+              <span className="text-[10px] text-stone-400 font-mono">3 packages ready</span>
             </div>
 
-            <a
-              href="/master-documents.zip"
-              download="master-documents.zip"
-              className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download .ZIP</span>
-            </a>
+            {/* Asset 1: Full Source Code Archive */}
+            <div className="p-3 rounded-2xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
+              <div>
+                <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                  <span>Source Code Archive (.zip)</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">276 KB</span>
+                </div>
+                <div className="text-[10px] text-stone-400">
+                  Full git repository with React 19 app, native Android project & configs
+                </div>
+              </div>
+
+              <a
+                href="/master-documents.zip"
+                download="master-documents-source-v1.0.0.zip"
+                className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all text-[11px] shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Source Code</span>
+              </a>
+            </div>
+
+            {/* Asset 2: Web Production Bundle */}
+            <div className="p-3 rounded-2xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
+              <div>
+                <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                  <span>Compiled Web App Bundle (.zip)</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">1.2 MB</span>
+                </div>
+                <div className="text-[10px] text-stone-400">
+                  Compiled, zero-dependency HTML/JS distribution ready for web hosting or PWA
+                </div>
+              </div>
+
+              <a
+                href="/master-documents-web.zip"
+                download="master-documents-web-v1.0.0.zip"
+                className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all text-[11px] shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Web Bundle</span>
+              </a>
+            </div>
+
+            {/* Asset 3: Native Android Project */}
+            <div className="p-3 rounded-2xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
+              <div>
+                <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                  <span>Android Studio Project (.zip)</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">14 KB</span>
+                </div>
+                <div className="text-[10px] text-stone-400">
+                  Native Kotlin Jetpack Compose app, Room DB, SAF file picker, PdfRenderer
+                </div>
+              </div>
+
+              <a
+                href="/master-documents-android.zip"
+                download="master-documents-android-v1.0.0.zip"
+                className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all text-[11px] shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Android App</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Quick Git Push Terminal Command Helper */}
+          <div className="pt-2 border-t border-stone-200/60 dark:border-stone-800/60 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                <GitBranch className="w-3.5 h-3.5" style={{ color: currentAccent }} />
+                <span>Push Release to GitHub</span>
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    'git remote add origin https://github.com/mahesh2008here/master-documents.git && git push -u origin main && git push origin v1.0.0'
+                  );
+                  showToast('Git commands copied to clipboard!');
+                }}
+                className="text-[10px] font-semibold text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:underline"
+              >
+                Copy Commands
+              </button>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-stone-950 font-mono text-[11px] text-emerald-400 overflow-x-auto select-all leading-relaxed">
+              <div>git remote add origin https://github.com/mahesh2008here/master-documents.git</div>
+              <div>git push -u origin main</div>
+              <div className="text-amber-400">git push origin v1.0.0</div>
+            </div>
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-stone-400 pt-2 border-t border-stone-200/60 dark:border-stone-800/60">
-            <span>Branch: <strong>main (Clean)</strong></span>
+            <span>Branch: <strong>main</strong> • Tag: <strong>v1.0.0</strong></span>
             <span>License: <strong>Apache 2.0 (Offline)</strong></span>
           </div>
         </div>
