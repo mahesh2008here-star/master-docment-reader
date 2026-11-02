@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import com.paperwren.documentreader.data.dao.DocumentDao
 import com.paperwren.documentreader.data.model.BookmarkEntity
 import com.paperwren.documentreader.data.model.DocumentEntity
+import androidx.room.TypeConverters
 import com.paperwren.documentreader.data.model.ReadingHistoryEntity
 
 @Database(
@@ -14,6 +15,7 @@ import com.paperwren.documentreader.data.model.ReadingHistoryEntity
     version = 1,
     exportSchema = false
 )
+@TypeConverters(AppTypeConverters::class)
 abstract class PaperwrenDatabase : RoomDatabase() {
 
     abstract fun documentDao(): DocumentDao

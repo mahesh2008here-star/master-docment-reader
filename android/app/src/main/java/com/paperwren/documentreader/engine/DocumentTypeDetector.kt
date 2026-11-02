@@ -96,7 +96,7 @@ object DocumentTypeDetector {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             return DocumentFormat.UNSUPPORTED
         }
 

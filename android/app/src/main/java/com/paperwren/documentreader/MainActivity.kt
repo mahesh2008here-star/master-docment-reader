@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity() {
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
-            } catch (_: Exception) {}
+            } catch (e: Exception) {}
             val vm = ViewModelProvider(this, viewModelFactory)[DocumentViewModel::class.java]
             vm.importDocument(uri)
         }
@@ -201,7 +201,7 @@ fun LiquidGlassBottomBar(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp, horizontal = 12.dp),
             horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertiling
+            verticalAlignment = Alignment.CenterVertically
         ) {
             val tabs = listOf(
                 Triple(0, "Documents", Icons.Default.Description),
@@ -388,7 +388,7 @@ fun DocumentRowItem(
                     DocumentFormat.DOCX -> Color(0xFF2563EB)
                     DocumentFormat.XLSX -> Color(0xFF059669)
                     DocumentFormat.PPTX -> Color(0xFFEA580C)
-                    DocumentFormat.MARKDOWN -> Color(0xFF7C3AED)
+                    DocumentFormat.MD -> Color(0xFF7C3AED)
                     else -> Color(0xFF4B5563)
                 },
                 modifier = Modifier.size(42.dp)
@@ -432,7 +432,7 @@ fun DocumentRowItem(
 
             IconButton(onClick = onDelete) {
                 Icon(
-                    Icons.Default.DeleteOutline,
+                    Icons.Outlined.Delete,
                     contentDescription = "Delete",
                     tint = Color(0xFF6B7280)
                 )
@@ -462,12 +462,12 @@ fun ToolsTab() {
         )
 
         val tools = listOf(
-            Triple("Merge PDFs", "Combine multiple PDF files into one", Icons.Default.CallMerge),
-            Triple("Split PDF", "Extract specific pages or page ranges", Icons.Default.CallSplit),
-            Triple("Compress PDF", "Reduce document file size locally", Icons.Default.Compress),
+            Triple("Merge PDFs", "Combine multiple PDF files into one", Icons.Default.Layers),
+            Triple("Split PDF", "Extract specific pages or page ranges", Icons.Default.ContentCut),
+            Triple("Compress PDF", "Reduce document file size locally", Icons.Default.Archive),
             Triple("Extract Text", "Convert scans or docs to plain Markdown", Icons.Default.TextFields),
             Triple("Word to PDF", "Render Word documents to PDF", Icons.Default.Transform),
-            Triple("Watermark Engine", "Add confidential or custom stamps", Icons.Default.BrandingWatermark)
+            Triple("Watermark Engine", "Add confidential or custom stamps", Icons.Default.Star)
         )
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {

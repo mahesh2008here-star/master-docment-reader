@@ -1,10 +1,9 @@
-package com.paperwren.documentreader.test
+package com.paperwren.documentreader
 
 import com.paperwren.documentreader.data.model.DocumentFormat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.ByteArrayInputStream
 
 class DocumentDetectionTest {
 
