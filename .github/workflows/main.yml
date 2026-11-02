@@ -34,29 +34,57 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Cache & Configure Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Prepare Gradle Wrapper
+      - name: Set up Android SDK & Accept Licenses
         run: |
-          mkdir -p android/gradle/wrapper
-          if [ ! -f android/gradle/wrapper/gradle-wrapper.jar ]; then
-            echo "Fetching gradle-wrapper.jar..."
-            curl -sLo android/gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar
+          echo "Configuring pre-installed Android SDK on GitHub Runner..."
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          
+          # Add SDK tools to PATH
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+          
+          # Find sdkmanager
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -f "$SDKMANAGER" ]; then
+            SDKMANAGER=$(which sdkmanager || true)
           fi
-          chmod +x android/gradlew
+          
+          echo "Using sdkmanager at: $SDKMANAGER"
+          if [ -n "$SDKMANAGER" ] && [ -x "$SDKMANAGER" ]; then
+            echo "Accepting licenses..."
+            yes | "$SDKMANAGER" --licenses || true
+            echo "Installing platforms;android-35 and build-tools;35.0.0..."
+            "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools" || true
+          else
+            echo "sdkmanager not found directly, AGP will auto-download components with licenses accepted."
+          fi
+
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Prepare Android Project & Wrapper
+        working-directory: ./android
+        run: |
+          echo "Generating official Gradle wrapper with installed Gradle..."
+          gradle wrapper --gradle-version 8.11.1 --distribution-type bin
+          chmod +x gradlew
+          ls -la gradle/wrapper/
 
       - name: Build Android Debug APK
+        working-directory: ./android
         run: |
-          cd android
+          echo "Compiling Debug APK..."
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Build Android Release APK
+        working-directory: ./android
         run: |
-          cd android
+          echo "Compiling Release APK..."
           ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Package & Name APK Deliverables
