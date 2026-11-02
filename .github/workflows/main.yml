@@ -77,32 +77,46 @@ jobs:
 
       - name: Build Android Debug APK
         working-directory: ./android
+        shell: bash
         run: |
+          set -o pipefail
           echo "Compiling Debug APK..."
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../android-build.log
 
       - name: Build Android Release APK
         working-directory: ./android
+        shell: bash
         run: |
+          set -o pipefail
           echo "Compiling Release APK..."
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee -a ../android-build.log
 
       - name: Package & Name APK Deliverables
+        if: always()
         run: |
           mkdir -p release-apks
           # Locate and copy debug APK
-          DEBUG_APK=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          DEBUG_APK=$(find android/app/build/outputs/apk/debug -name "*.apk" 2>/dev/null | head -n 1)
           if [ -n "$DEBUG_APK" ]; then
             cp "$DEBUG_APK" release-apks/MasterDocuments-v1.0.0-debug.apk
             echo "Debug APK ready: release-apks/MasterDocuments-v1.0.0-debug.apk"
           fi
           # Locate and copy release APK
-          RELEASE_APK=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          RELEASE_APK=$(find android/app/build/outputs/apk/release -name "*.apk" 2>/dev/null | head -n 1)
           if [ -n "$RELEASE_APK" ]; then
             cp "$RELEASE_APK" release-apks/MasterDocuments-v1.0.0-release.apk
             echo "Release APK ready: release-apks/MasterDocuments-v1.0.0-release.apk"
           fi
-          ls -lh release-apks/
+          ls -lh release-apks/ || true
+
+      - name: Upload Android Build Diagnostic Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paperwren-build-diagnostics-android
+          path: android-build.log
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload APKs as GitHub Actions Artifacts
         uses: actions/upload-artifact@v4
@@ -141,7 +155,19 @@ jobs:
         run: npm ci || npm install
 
       - name: Build Production Web App
-        run: npm run build
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee web-build.log
+
+      - name: Upload Web Build Diagnostic Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paperwren-build-diagnostics-web
+          path: web-build.log
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload Web App Artifact
         uses: actions/upload-artifact@v4
@@ -149,3 +175,4 @@ jobs:
           name: MasterDocuments-Web-Distribution
           path: dist/
           retention-days: 30
+
