@@ -16,7 +16,9 @@ import {
   Sliders,
   Sparkles,
   Info,
-  ChevronRight
+  ChevronRight,
+  Download,
+  GitBranch
 } from 'lucide-react';
 import { AppPreferences, ReaderTheme } from '../types/document';
 
@@ -251,8 +253,30 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             Follow the latest commits, report issues, and inspect repository releases directly on GitHub.
           </p>
 
+          {/* 1-Click Codebase Download */}
+          <div className="pt-2 border-t border-stone-200/60 dark:border-stone-800/60 flex items-center justify-between gap-3">
+            <div>
+              <div className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                <Download className="w-3.5 h-3.5" style={{ color: currentAccent }} />
+                <span>Download Source Archive</span>
+              </div>
+              <div className="text-[10px] text-stone-400">
+                Complete React & Native Android project (.ZIP)
+              </div>
+            </div>
+
+            <a
+              href="/master-documents.zip"
+              download="master-documents.zip"
+              className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download .ZIP</span>
+            </a>
+          </div>
+
           <div className="flex items-center justify-between text-[11px] text-stone-400 pt-2 border-t border-stone-200/60 dark:border-stone-800/60">
-            <span>Version: <strong>2.4.0 (Retro-Modern Master)</strong></span>
+            <span>Branch: <strong>main (Clean)</strong></span>
             <span>License: <strong>Apache 2.0 (Offline)</strong></span>
           </div>
         </div>
