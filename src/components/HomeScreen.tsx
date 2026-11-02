@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FileText,
   UploadCloud,
@@ -14,11 +14,17 @@ import {
   ChevronRight,
   FolderLock,
   Layers,
-  Heart,
   FileSpreadsheet,
   Presentation,
   FileCode,
-  Sparkles
+  Search,
+  LayoutGrid,
+  List,
+  ArrowUpDown,
+  FileQuestion,
+  RefreshCw,
+  Sparkles,
+  Lock
 } from 'lucide-react';
 import { DocumentItem, DocumentFormat } from '../types/document';
 import { DocumentCard, formatFileSize } from './DocumentCard';
@@ -31,14 +37,14 @@ interface HomeScreenProps {
   storagePermissionGranted?: boolean;
   onRequestPermissions?: () => void;
   onOpenDocument: (doc: DocumentItem) => void;
-  onSelectCategory: (format: DocumentFormat) => void;
   onOpenImport: () => void;
   onToggleFavorite: (doc: DocumentItem) => void;
   onShowDetails: (doc: DocumentItem) => void;
   onRename: (doc: DocumentItem) => void;
   onDelete: (doc: DocumentItem) => void;
   onShare: (doc: DocumentItem) => void;
-  onNavigateToFiles: () => void;
+  onResetSamples: () => void;
+  onMoveToLocker?: (doc: DocumentItem) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -49,63 +55,103 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   storagePermissionGranted = true,
   onRequestPermissions,
   onOpenDocument,
-  onSelectCategory,
   onOpenImport,
   onToggleFavorite,
   onShowDetails,
   onRename,
   onDelete,
   onShare,
-  onNavigateToFiles,
+  onResetSamples,
+  onMoveToLocker,
 }) => {
-  const totalSizeBytes = documents.reduce((sum, d) => sum + d.sizeBytes, 0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFormatFilter, setActiveFormatFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'size' | 'type'>('date');
+  const [sortAscending, setSortAscending] = useState<boolean>(false);
+  const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
 
-  const categories: Array<{ id: DocumentFormat; label: string; count: number; icon: any; color: string }> = [
+  // Filter out vaulted documents from public home screen
+  const unvaultedDocs = documents.filter((d) => !d.isVaulted);
+
+  const categories: Array<{ id: string; label: string; count: number; icon: any; color: string }> = [
+    {
+      id: 'all',
+      label: 'All Files',
+      count: unvaultedDocs.length,
+      icon: Layers,
+      color: accentColor,
+    },
     {
       id: 'pdf',
       label: 'PDFs',
-      count: documents.filter((d) => d.format === 'pdf').length,
+      count: unvaultedDocs.filter((d) => d.format === 'pdf').length,
       icon: FileText,
       color: '#e11d48',
     },
     {
       id: 'docx',
       label: 'Word',
-      count: documents.filter((d) => ['docx', 'doc'].includes(d.format)).length,
+      count: unvaultedDocs.filter((d) => ['docx', 'doc'].includes(d.format)).length,
       icon: FileText,
       color: '#2563eb',
     },
     {
       id: 'xlsx',
       label: 'Sheets',
-      count: documents.filter((d) => ['xlsx', 'xls', 'csv'].includes(d.format)).length,
+      count: unvaultedDocs.filter((d) => ['xlsx', 'xls', 'csv'].includes(d.format)).length,
       icon: FileSpreadsheet,
       color: '#059669',
     },
     {
       id: 'pptx',
       label: 'Slides',
-      count: documents.filter((d) => ['pptx', 'ppt'].includes(d.format)).length,
+      count: unvaultedDocs.filter((d) => ['pptx', 'ppt'].includes(d.format)).length,
       icon: Presentation,
       color: '#d97706',
     },
     {
       id: 'txt',
       label: 'Notes & MD',
-      count: documents.filter((d) => ['txt', 'md'].includes(d.format)).length,
+      count: unvaultedDocs.filter((d) => ['txt', 'md'].includes(d.format)).length,
       icon: FileCode,
       color: '#475569',
     },
   ];
 
+  // Filtering
+  let filtered = unvaultedDocs.filter((doc) => {
+    const matchesSearch =
+      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.format.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    if (activeFormatFilter === 'all') return true;
+    if (activeFormatFilter === 'docx') return ['docx', 'doc'].includes(doc.format);
+    if (activeFormatFilter === 'xlsx') return ['xlsx', 'xls', 'csv'].includes(doc.format);
+    if (activeFormatFilter === 'pptx') return ['pptx', 'ppt'].includes(doc.format);
+    if (activeFormatFilter === 'txt') return ['txt', 'md'].includes(doc.format);
+    return doc.format === activeFormatFilter;
+  });
+
+  // Sorting
+  filtered.sort((a, b) => {
+    let comp = 0;
+    if (sortBy === 'name') comp = a.name.localeCompare(b.name);
+    else if (sortBy === 'date') comp = b.lastOpenedAt - a.lastOpenedAt;
+    else if (sortBy === 'size') comp = b.sizeBytes - a.sizeBytes;
+    else if (sortBy === 'type') comp = a.format.localeCompare(b.format);
+
+    return sortAscending ? -comp : comp;
+  });
+
   return (
     <div className="flex-1 overflow-y-auto px-4 py-5 max-w-2xl mx-auto w-full space-y-6 pb-28 text-stone-900 dark:text-stone-100">
-      {/* Header Bar */}
+      {/* Top Header Bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {/* Master Documents Custom Retro-Modern Vector Icon */}
           <div
-            className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-xl transition-transform hover:scale-105 active:scale-95"
             style={{
               background: `linear-gradient(135deg, ${accentColor}, #4f46e5)`,
             }}
@@ -114,7 +160,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-black tracking-tight">Master Documents</h1>
+              <h1 className="text-xl font-black tracking-tight">Master Documents</h1>
               <span
                 className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-md text-white shadow-xs"
                 style={{ backgroundColor: accentColor }}
@@ -123,7 +169,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-stone-400">
-              Retro-Modern Document Workstation
+              Personal Document Workstation
             </p>
           </div>
         </div>
@@ -131,7 +177,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Quick Import Action */}
         <button
           onClick={onOpenImport}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-white text-xs font-bold shadow-md active:scale-95 transition-transform"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-white text-xs font-bold shadow-md active:scale-95 transition-transform"
           style={{ backgroundColor: accentColor }}
         >
           <UploadCloud className="w-4 h-4" />
@@ -162,81 +208,165 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       )}
 
-      {/* Hero Welcome & Privacy Card */}
-      <div className="droplert-card rounded-3xl p-5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-bold text-stone-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            Zero-Cloud Local Engine
-          </span>
-          <span className="font-mono text-[11px] text-stone-400 tabular-nums">
-            {documents.length} files • {formatFileSize(totalSizeBytes)}
-          </span>
-        </div>
-
-        <h2 className="text-base font-bold text-stone-900 dark:text-stone-100">
-          Fast, beautiful reading with zero distractions
-        </h2>
-
-        <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-          Read PDFs, Word files, Excel spreadsheets, presentations, and markdown completely offline.
-          No accounts, no advertisements, and no tracking.
-        </p>
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name, format, or keyword..."
+          className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-xs text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/50 shadow-xs transition-all"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {/* Category Pills Strip */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between text-xs px-1">
-          <span className="font-bold text-stone-700 dark:text-stone-300">File Formats</span>
-          <button
-            onClick={onNavigateToFiles}
-            className="font-semibold hover:underline flex items-center gap-0.5"
-            style={{ color: accentColor }}
-          >
-            <span>View All</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          {categories.map((cat) => {
-            const Icon = cat.icon;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => onSelectCategory(cat.id)}
-                className="droplert-card p-3 rounded-2xl text-left transition-all group active:scale-95"
-              >
-                <div
-                  className="w-7 h-7 rounded-xl flex items-center justify-center text-white mb-2 shadow-xs"
-                  style={{ backgroundColor: cat.color }}
-                >
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div className="text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-amber-500 transition-colors">
-                  {cat.label}
-                </div>
-                <div className="text-[10px] text-stone-400 mt-0.5 tabular-nums">
-                  {cat.count} files
-                </div>
-              </button>
-            );
-          })}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs select-none">
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveFormatFilter(cat.id)}
+              className={`px-3.5 py-1.5 rounded-full font-medium whitespace-nowrap transition-all active:scale-95 ${
+                activeFormatFilter === cat.id
+                  ? 'text-white shadow-md font-bold'
+                  : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border border-stone-200/60 dark:border-stone-800/80 hover:bg-stone-50 dark:hover:bg-stone-800'
+              }`}
+              style={{
+                backgroundColor: activeFormatFilter === cat.id ? accentColor : undefined,
+              }}
+            >
+              <span>{cat.label}</span>
+              <span className="ml-1.5 text-[10px] opacity-75 tabular-nums">({cat.count})</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Recently Opened Documents */}
-      {recentDocuments.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs px-1">
-            <div className="flex items-center gap-1.5 font-bold text-stone-700 dark:text-stone-300">
-              <Clock className="w-3.5 h-3.5" style={{ color: accentColor }} />
-              <span>Continue Reading</span>
-            </div>
+      {/* Sort & Layout Controls */}
+      <div className="flex items-center justify-between text-xs text-stone-500 px-1 pt-1">
+        <div className="flex items-center gap-1.5 font-medium">
+          <span className="font-bold text-stone-800 dark:text-stone-200 tabular-nums">
+            {filtered.length}
+          </span>
+          <span>documents found</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 px-2.5 py-1 rounded-xl shadow-xs">
+            <ArrowUpDown className="w-3.5 h-3.5 text-stone-400" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-transparent text-xs text-stone-700 dark:text-stone-300 focus:outline-hidden cursor-pointer"
+            >
+              <option value="date" className="dark:bg-black">Recent</option>
+              <option value="name" className="dark:bg-black">Name</option>
+              <option value="size" className="dark:bg-black">Size</option>
+              <option value="type" className="dark:bg-black">Format</option>
+            </select>
+            <button
+              onClick={() => setSortAscending(!sortAscending)}
+              className="text-[10px] font-bold px-1 hover:text-amber-500"
+              title={sortAscending ? 'Ascending' : 'Descending'}
+            >
+              {sortAscending ? '▲' : '▼'}
+            </button>
           </div>
 
+          {/* Layout Toggle */}
+          <div className="flex items-center bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-0.5 rounded-xl shadow-xs">
+            <button
+              onClick={() => setViewLayout('grid')}
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewLayout === 'grid'
+                  ? 'text-white shadow-xs'
+                  : 'text-stone-400 hover:text-stone-600'
+              }`}
+              style={{
+                backgroundColor: viewLayout === 'grid' ? accentColor : undefined,
+              }}
+              title="Grid View"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewLayout('list')}
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewLayout === 'list'
+                  ? 'text-white shadow-xs'
+                  : 'text-stone-400 hover:text-stone-600'
+              }`}
+              style={{
+                backgroundColor: viewLayout === 'list' ? accentColor : undefined,
+              }}
+              title="List View"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Document Grid / List Content */}
+      <div>
+        {filtered.length === 0 ? (
+          <div className="p-8 text-center rounded-3xl border border-dashed border-stone-300 dark:border-stone-800 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+              <FileQuestion className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-stone-800 dark:text-stone-200">
+              No Documents in this View
+            </h3>
+            <p className="text-xs text-stone-400 max-w-xs mx-auto">
+              {searchQuery
+                ? `No documents matching "${searchQuery}".`
+                : 'Import documents from your device or restore sample files.'}
+            </p>
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                onClick={onOpenImport}
+                className="px-3.5 py-1.5 rounded-xl text-white text-xs font-semibold shadow-xs"
+                style={{ backgroundColor: accentColor }}
+              >
+                Import File
+              </button>
+              <button
+                onClick={onResetSamples}
+                className="px-3.5 py-1.5 rounded-xl bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold"
+              >
+                Restore Samples
+              </button>
+            </div>
+          </div>
+        ) : viewLayout === 'grid' ? (
+          <div className="grid grid-cols-2 gap-3.5">
+            {filtered.map((doc) => (
+              <DocumentCard
+                key={doc.id}
+                document={doc}
+                viewLayout="grid"
+                onOpen={onOpenDocument}
+                onToggleFavorite={onToggleFavorite}
+                onShowDetails={onShowDetails}
+                onRename={onRename}
+                onDelete={onDelete}
+                onShare={onShare}
+              />
+            ))}
+          </div>
+        ) : (
           <div className="space-y-2.5">
-            {recentDocuments.slice(0, 3).map((doc) => (
+            {filtered.map((doc) => (
               <DocumentCard
                 key={doc.id}
                 document={doc}
@@ -250,32 +380,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               />
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Favorite Documents */}
-      {favoriteDocuments.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs px-1">
-            <div className="flex items-center gap-1.5 font-bold text-stone-700 dark:text-stone-300">
-              <Bookmark className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-              <span>Starred Collection</span>
-            </div>
-            <button
-              onClick={onNavigateToFiles}
-              className="font-semibold hover:underline"
-              style={{ color: accentColor }}
-            >
-              See all
-            </button>
+      {/* Recently Read Strip (if available) */}
+      {recentDocuments.length > 0 && searchQuery === '' && (
+        <div className="space-y-3 pt-3 border-t border-stone-200/60 dark:border-stone-800/60">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-stone-700 dark:text-stone-300 px-1">
+            <Clock className="w-3.5 h-3.5" style={{ color: accentColor }} />
+            <span>Recently Read</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
-            {favoriteDocuments.slice(0, 4).map((doc) => (
+          <div className="space-y-2.5">
+            {recentDocuments.slice(0, 2).map((doc) => (
               <DocumentCard
-                key={doc.id}
+                key={'rec_' + doc.id}
                 document={doc}
-                viewLayout="grid"
+                viewLayout="list"
                 onOpen={onOpenDocument}
                 onToggleFavorite={onToggleFavorite}
                 onShowDetails={onShowDetails}

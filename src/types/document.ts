@@ -43,6 +43,7 @@ export interface DocumentItem {
   importedAt: number;
   lastOpenedAt: number;
   isFavorite: boolean;
+  isVaulted?: boolean;
   pageCount?: number;
   lastPageRead: number;
   thumbnailDataUrl?: string;
@@ -101,6 +102,7 @@ export interface AppPreferences {
   defaultSortOrder: 'asc' | 'desc';
   viewLayout: 'grid' | 'list';
   autoSaveProgress: boolean;
+  vaultPin?: string; // Default 1234
   readerSettings: ReaderSettings;
 }
 

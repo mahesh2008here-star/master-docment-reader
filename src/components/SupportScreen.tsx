@@ -17,16 +17,19 @@ import {
   Coffee,
   Zap,
   Lock,
-  Unlock
+  Unlock,
+  ArrowLeft
 } from 'lucide-react';
 import { generateUpiQrSvg } from '../services/qrGenerator';
 
 interface SupportScreenProps {
   accentColor?: string;
+  onBack?: () => void;
 }
 
 export const SupportScreen: React.FC<SupportScreenProps> = ({
   accentColor = '#f59e0b',
+  onBack,
 }) => {
   const UPI_ID = 'mahesh.2008here@oksbi';
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
@@ -49,6 +52,19 @@ export const SupportScreen: React.FC<SupportScreenProps> = ({
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 max-w-2xl mx-auto w-full space-y-6 pb-28">
+      {/* Back button if opened from Settings */}
+      {onBack && (
+        <div className="flex items-center">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white/70 dark:bg-stone-900/80 hover:bg-white dark:hover:bg-stone-850 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-800/60 text-xs font-semibold shadow-xs active:scale-95 transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Settings</span>
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center space-y-2">
         <div

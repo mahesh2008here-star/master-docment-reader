@@ -60,10 +60,39 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchMatches, setSearchMatches] = useState<number[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [turnAnimation, setTurnAnimation] = useState<'forward' | 'backward' | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const renderTaskRef = useRef<any>(null);
+
+  const triggerTurnAnimation = (dir: 'forward' | 'backward') => {
+    setTurnAnimation(dir);
+    setTimeout(() => {
+      setTurnAnimation(null);
+    }, 450);
+  };
+
+  // Keyboard navigation for smooth page turning
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (searchOpen) return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        if (currentPage < numPages) {
+          triggerTurnAnimation('forward');
+          setCurrentPage((p) => p + 1);
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        if (currentPage > 1) {
+          triggerTurnAnimation('backward');
+          setCurrentPage((p) => p - 1);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentPage, numPages, searchOpen]);
 
   // Background styling
   const getContainerBg = () => {
@@ -135,12 +164,14 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
   // Page Navigation
   const goToNextPage = () => {
     if (currentPage < numPages) {
+      triggerTurnAnimation('forward');
       setCurrentPage((p) => p + 1);
     }
   };
 
   const goToPrevPage = () => {
     if (currentPage > 1) {
+      triggerTurnAnimation('backward');
       setCurrentPage((p) => p - 1);
     }
   };
@@ -149,6 +180,8 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
     e.preventDefault();
     const target = parseInt(jumpPageInput, 10);
     if (!isNaN(target) && target >= 1 && target <= numPages) {
+      if (target > currentPage) triggerTurnAnimation('forward');
+      else if (target < currentPage) triggerTurnAnimation('backward');
       setCurrentPage(target);
       setJumpPageInput('');
     }
@@ -284,10 +317,21 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
           </div>
         )}
 
-        <canvas
-          ref={canvasRef}
-          className="shadow-2xl rounded-lg transition-transform duration-150 max-w-none origin-center"
-        />
+        <div
+          className={`flex items-center justify-center transition-all ${
+            turnAnimation === 'forward'
+              ? 'page-turn-forward'
+              : turnAnimation === 'backward'
+              ? 'page-turn-backward'
+              : ''
+          }`}
+          style={{ perspective: '1400px' }}
+        >
+          <canvas
+            ref={canvasRef}
+            className="shadow-2xl rounded-lg transition-transform duration-150 max-w-none origin-center"
+          />
+        </div>
       </div>
 
       {/* Floating Bottom Reader Navigation Bar */}

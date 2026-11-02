@@ -10,14 +10,21 @@
 
 @layer base {
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     touch-action: manipulation;
   }
+
+  /* True AMOLED Black for dark mode */
+  .dark body,
+  .dark {
+    background-color: #000000 !important;
+    color: #f3f4f6;
+  }
 }
 
-/* Custom scrollbars for document reader */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -38,68 +45,116 @@
 
 /* Apple Liquid Glass Dock */
 .liquid-glass-dock {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(28px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
-    0 12px 36px -4px rgba(0, 0, 0, 0.12),
+    0 16px 40px -4px rgba(0, 0, 0, 0.14),
     0 4px 12px -2px rgba(0, 0, 0, 0.08),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.85);
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.9);
 }
 
 .dark .liquid-glass-dock {
-  background: rgba(26, 26, 28, 0.75);
-  backdrop-filter: blur(32px) saturate(190%);
-  -webkit-backdrop-filter: blur(32px) saturate(190%);
+  background: rgba(5, 5, 5, 0.82);
+  backdrop-filter: blur(36px) saturate(200%);
+  -webkit-backdrop-filter: blur(36px) saturate(200%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 16px 40px -4px rgba(0, 0, 0, 0.55),
-    0 6px 16px -2px rgba(0, 0, 0, 0.35),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+    0 20px 48px -4px rgba(0, 0, 0, 0.9),
+    0 6px 18px -2px rgba(0, 0, 0, 0.7),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.18);
 }
 
-/* Droplert-inspired tactile retro-modern cards */
+/* Pure AMOLED Droplert tactile cards */
 .droplert-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(229, 231, 235, 0.85);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark .droplert-card {
-  background: rgba(24, 24, 27, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #080808;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6);
 }
 
 .droplert-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.09);
 }
 
 .dark .droplert-card:hover {
-  box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.45);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.95);
 }
 
-/* Dynamic Accent Styles */
-.bg-accent {
-  background-color: var(--accent-color);
+/* Cinematic Document Opening Aperture Animation */
+@keyframes documentOpenAperture {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(20px);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0px);
+  }
 }
 
-.text-accent {
-  color: var(--accent-color);
+.animate-document-open {
+  animation: documentOpenAperture 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.border-accent {
-  border-color: var(--accent-color);
+/* Super Unique Spatial Holographic Liquid Page Turning Animations */
+@keyframes pageSpatialForward {
+  0% {
+    opacity: 0.2;
+    transform: perspective(1200px) rotateY(-14deg) scale(0.92) translateX(40px);
+    filter: blur(4px) brightness(1.15);
+  }
+  50% {
+    opacity: 0.9;
+    filter: blur(1px) brightness(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg) scale(1) translateX(0);
+    filter: blur(0px) brightness(1);
+  }
 }
 
-.bg-accent-subtle {
-  background-color: var(--accent-light);
+@keyframes pageSpatialBackward {
+  0% {
+    opacity: 0.2;
+    transform: perspective(1200px) rotateY(14deg) scale(0.92) translateX(-40px);
+    filter: blur(4px) brightness(1.15);
+  }
+  50% {
+    opacity: 0.9;
+    filter: blur(1px) brightness(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg) scale(1) translateX(0);
+    filter: blur(0px) brightness(1);
+  }
 }
 
-.border-accent-subtle {
-  border-color: var(--accent-border);
+.page-turn-forward {
+  animation: pageSpatialForward 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.page-turn-backward {
+  animation: pageSpatialBackward 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter;
 }
 
 /* Typography styles for Word documents preview */

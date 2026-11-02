@@ -8,9 +8,6 @@ import {
   Palette,
   Pipette,
   Github,
-  HardDrive,
-  Trash2,
-  RefreshCw,
   FolderLock,
   ExternalLink,
   ShieldCheck,
@@ -22,33 +19,20 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { AppPreferences, ReaderTheme } from '../types/document';
-import { formatFileSize } from './DocumentCard';
 
 interface SettingsScreenProps {
   preferences: AppPreferences;
   onUpdatePreferences: (updates: Partial<AppPreferences>) => void;
-  onClearThumbnails: () => Promise<void>;
-  onClearHistory: () => Promise<void>;
-  onResetSamples: () => Promise<void>;
   onRequestPermissions: () => void;
   onNavigateToSupport: () => void;
-  documentCount: number;
-  totalSizeBytes: number;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   preferences,
   onUpdatePreferences,
-  onClearThumbnails,
-  onClearHistory,
-  onResetSamples,
   onRequestPermissions,
   onNavigateToSupport,
-  documentCount,
-  totalSizeBytes,
 }) => {
-  const [clearingThumbnails, setClearingThumbnails] = useState(false);
-  const [clearingHistory, setClearingHistory] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -294,79 +278,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </div>
 
         <ChevronRight className="w-4 h-4 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
-      </div>
-
-      {/* Section 5: Cache Sanitization */}
-      <div className="space-y-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-stone-400 px-1">
-          Storage Maintenance
-        </h2>
-
-        <div className="droplert-card rounded-3xl p-5 shadow-sm space-y-3 text-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-semibold text-stone-800 dark:text-stone-200">Catalog Storage</div>
-              <div className="text-[11px] text-stone-400">
-                {documentCount} files ({formatFileSize(totalSizeBytes)}) stored locally
-              </div>
-            </div>
-
-            <button
-              onClick={async () => {
-                setClearingThumbnails(true);
-                await onClearThumbnails();
-                setClearingThumbnails(false);
-                showToast('Thumbnail cache cleared');
-              }}
-              disabled={clearingThumbnails}
-              className="px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-semibold"
-            >
-              {clearingThumbnails ? 'Clearing...' : 'Clear Thumbnails'}
-            </button>
-          </div>
-
-          <div className="h-px bg-stone-200/60 dark:bg-stone-800/60" />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-semibold text-stone-800 dark:text-stone-200">Reading Progress & History</div>
-              <div className="text-[11px] text-stone-400">Reset saved page positions</div>
-            </div>
-
-            <button
-              onClick={async () => {
-                setClearingHistory(true);
-                await onClearHistory();
-                setClearingHistory(false);
-                showToast('Reading history reset');
-              }}
-              disabled={clearingHistory}
-              className="px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-semibold"
-            >
-              {clearingHistory ? 'Clearing...' : 'Reset History'}
-            </button>
-          </div>
-
-          <div className="h-px bg-stone-200/60 dark:bg-stone-800/60" />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-semibold text-stone-800 dark:text-stone-200">Sample Documents</div>
-              <div className="text-[11px] text-stone-400">Re-seed PDF, Word, Excel, Slide samples</div>
-            </div>
-
-            <button
-              onClick={async () => {
-                await onResetSamples();
-                showToast('Sample documents re-seeded');
-              }}
-              className="px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-semibold flex items-center gap-1.5"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Re-seed</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

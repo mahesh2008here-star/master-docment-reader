@@ -28,8 +28,8 @@ import {
 import { seedSampleDocumentsIfEmpty } from './services/sampleDocuments';
 import { BottomNav, NavTab } from './components/BottomNav';
 import { HomeScreen } from './components/HomeScreen';
-import { LibraryScreen } from './components/LibraryScreen';
-import { FavoritesScreen } from './components/FavoritesScreen';
+import { ToolsScreen } from './components/ToolsScreen';
+import { LockerScreen } from './components/LockerScreen';
 import { SupportScreen } from './components/SupportScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { ReaderToolbar } from './components/Reader/ReaderToolbar';
@@ -48,8 +48,7 @@ import { PermissionsModal } from './components/Dialogs/PermissionsModal';
 export default function App() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [preferences, setPreferences] = useState<AppPreferences | null>(null);
-  const [currentTab, setCurrentTab] = useState<NavTab>('home');
-  const [selectedCategory, setSelectedCategory] = useState<DocumentFormat | null>(null);
+  const [currentTab, setCurrentTab] = useState<NavTab | 'support'>('home');
   const [activeDocument, setActiveDocument] = useState<DocumentItem | null>(null);
 
   // Reader UI State
@@ -68,15 +67,10 @@ export default function App() {
   const [deleteDoc, setDeleteDoc] = useState<DocumentItem | null>(null);
   const [compatibilityModalOpen, setCompatibilityModalOpen] = useState<boolean>(false);
 
-  // Storage stats
-  const [totalSizeBytes, setTotalSizeBytes] = useState<number>(0);
-
   // Load preferences and documents on startup
   const refreshDocuments = useCallback(async () => {
     const docs = await getAllDocuments();
     setDocuments(docs);
-    const stats = await getStorageStats();
-    setTotalSizeBytes(stats.totalSizeBytes);
   }, []);
 
   useEffect(() => {
@@ -90,8 +84,6 @@ export default function App() {
         docs = await seedSampleDocumentsIfEmpty(docs, saveDocument);
       }
       setDocuments(docs);
-      const stats = await getStorageStats();
-      setTotalSizeBytes(stats.totalSizeBytes);
 
       // Prompt for storage permission once if not yet granted
       if (!prefs.storagePermissionGranted) {
@@ -164,6 +156,20 @@ export default function App() {
     }
   };
 
+  const handleToggleVaultState = async (docId: string, isVaulted: boolean) => {
+    await updateDocument(docId, { isVaulted });
+    setDocuments((prev) =>
+      prev.map((d) => (d.id === docId ? { ...d, isVaulted } : d))
+    );
+    if (activeDocument && activeDocument.id === docId) {
+      setActiveDocument((prev) => (prev ? { ...prev, isVaulted } : null));
+    }
+  };
+
+  const handleUpdateVaultPin = async (newPin: string) => {
+    await handleUpdatePreferences({ vaultPin: newPin });
+  };
+
   const handlePageChange = async (page: number, total: number) => {
     if (!activeDocument) return;
     await recordReadingProgress(activeDocument.id, page, total);
@@ -234,8 +240,6 @@ export default function App() {
     await refreshDocuments();
     if (newDocs.length === 1) {
       handleOpenDocument(newDocs[0]);
-    } else {
-      setCurrentTab('files');
     }
   };
 
@@ -245,23 +249,6 @@ export default function App() {
     }
     const fresh = await seedSampleDocumentsIfEmpty([], saveDocument);
     setDocuments(fresh);
-    const stats = await getStorageStats();
-    setTotalSizeBytes(stats.totalSizeBytes);
-  };
-
-  const handleClearThumbnails = async () => {
-    await clearThumbnailCache();
-    await refreshDocuments();
-  };
-
-  const handleClearHistory = async () => {
-    await clearReadingHistory();
-    await refreshDocuments();
-  };
-
-  const handleSelectCategory = (format: DocumentFormat) => {
-    setSelectedCategory(format);
-    setCurrentTab('files');
   };
 
   if (!preferences) {
@@ -270,6 +257,7 @@ export default function App() {
 
   const recentDocs = [...documents].sort((a, b) => b.lastOpenedAt - a.lastOpenedAt);
   const favoriteDocs = documents.filter((d) => d.isFavorite);
+  const vaultedDocs = documents.filter((d) => d.isVaulted);
   const accent = preferences.accentColor || '#f59e0b';
 
   // Active Document Reader Screen
@@ -279,7 +267,7 @@ export default function App() {
     );
 
     return (
-      <div className="relative w-full h-screen flex flex-col overflow-hidden bg-stone-900 text-stone-100">
+      <div className="relative w-full h-screen flex flex-col overflow-hidden bg-stone-900 text-stone-100 animate-document-open">
         {/* Reader Top Toolbar */}
         <ReaderToolbar
           document={activeDocument}
@@ -382,9 +370,9 @@ export default function App() {
     );
   }
 
-  // Primary Application View (Home / Files / Favorites / Support / Settings)
+  // Primary Application View (Home / Tools / Locker / Settings / Support)
   return (
-    <div className="min-h-screen w-full flex flex-col bg-stone-100/90 dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors">
+    <div className="min-h-screen w-full flex flex-col bg-stone-100/90 dark:bg-black text-stone-900 dark:text-stone-100 transition-colors">
       {/* Active Screen Viewport */}
       <main className="flex-1 flex flex-col w-full h-full overflow-hidden">
         {currentTab === 'home' && (
@@ -396,23 +384,6 @@ export default function App() {
             storagePermissionGranted={preferences.storagePermissionGranted}
             onRequestPermissions={() => setPermissionsModalOpen(true)}
             onOpenDocument={handleOpenDocument}
-            onSelectCategory={handleSelectCategory}
-            onOpenImport={() => setImportModalOpen(true)}
-            onToggleFavorite={handleToggleFavorite}
-            onShowDetails={(doc) => setDetailsDoc(doc)}
-            onRename={(doc) => setRenameDoc(doc)}
-            onDelete={(doc) => setDeleteDoc(doc)}
-            onShare={handleShare}
-            onNavigateToFiles={() => setCurrentTab('files')}
-          />
-        )}
-
-        {currentTab === 'files' && (
-          <LibraryScreen
-            documents={documents}
-            selectedCategory={selectedCategory}
-            onClearCategory={() => setSelectedCategory(null)}
-            onOpenDocument={handleOpenDocument}
             onOpenImport={() => setImportModalOpen(true)}
             onToggleFavorite={handleToggleFavorite}
             onShowDetails={(doc) => setDetailsDoc(doc)}
@@ -420,37 +391,44 @@ export default function App() {
             onDelete={(doc) => setDeleteDoc(doc)}
             onShare={handleShare}
             onResetSamples={handleResetSamples}
+            onMoveToLocker={(doc) => handleToggleVaultState(doc.id, true)}
           />
         )}
 
-        {currentTab === 'favorites' && (
-          <FavoritesScreen
-            favoriteDocuments={favoriteDocs}
+        {currentTab === 'tools' && (
+          <ToolsScreen
+            documents={documents}
+            accentColor={accent}
             onOpenDocument={handleOpenDocument}
-            onToggleFavorite={handleToggleFavorite}
-            onShowDetails={(doc) => setDetailsDoc(doc)}
-            onRename={(doc) => setRenameDoc(doc)}
-            onDelete={(doc) => setDeleteDoc(doc)}
-            onShare={handleShare}
-            onNavigateToFiles={() => setCurrentTab('files')}
+          />
+        )}
+
+        {currentTab === 'locker' && (
+          <LockerScreen
+            documents={documents}
+            vaultPin={preferences.vaultPin || '1234'}
+            accentColor={accent}
+            onOpenDocument={handleOpenDocument}
+            onToggleVaultState={handleToggleVaultState}
+            onOpenImport={() => setImportModalOpen(true)}
+            onUpdatePin={handleUpdateVaultPin}
+            onDeleteDocument={(doc) => setDeleteDoc(doc)}
           />
         )}
 
         {currentTab === 'support' && (
-          <SupportScreen accentColor={accent} />
+          <SupportScreen
+            accentColor={accent}
+            onBack={() => setCurrentTab('settings')}
+          />
         )}
 
         {currentTab === 'settings' && (
           <SettingsScreen
             preferences={preferences}
             onUpdatePreferences={handleUpdatePreferences}
-            onClearThumbnails={handleClearThumbnails}
-            onClearHistory={handleClearHistory}
-            onResetSamples={handleResetSamples}
             onRequestPermissions={() => setPermissionsModalOpen(true)}
             onNavigateToSupport={() => setCurrentTab('support')}
-            documentCount={documents.length}
-            totalSizeBytes={totalSizeBytes}
           />
         )}
       </main>
@@ -458,11 +436,8 @@ export default function App() {
       {/* Apple-Inspired Liquid Glass Floating Dock */}
       <BottomNav
         currentTab={currentTab}
-        onSelectTab={(tab) => {
-          setCurrentTab(tab);
-          if (tab !== 'files') setSelectedCategory(null);
-        }}
-        favoritesCount={favoriteDocs.length}
+        onSelectTab={(tab) => setCurrentTab(tab)}
+        vaultedCount={vaultedDocs.length}
         accentColor={accent}
       />
 
