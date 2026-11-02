@@ -24,6 +24,14 @@ enum class SortOption {
     NAME, DATE, SIZE, TYPE
 }
 
+private data class FilterState(
+    val query: String,
+    val formatFilter: DocumentFormat?,
+    val sort: SortOption,
+    val isAscending: Boolean,
+    val isGridView: Boolean
+)
+
 class DocumentViewModel(
     private val repository: DocumentRepository
 ) : ViewModel() {
@@ -34,40 +42,47 @@ class DocumentViewModel(
     private val _isAscending = MutableStateFlow(false)
     private val _isGridView = MutableStateFlow(true)
 
-    val uiState: StateFlow<LibraryUiState> = combine(
-        repository.allDocuments,
+    private val _filterState = combine(
         _searchQuery,
         _selectedFormat,
         _sortBy,
         _isAscending,
         _isGridView
-    ) { docs, query, formatFilter, sort, asc, grid ->
+    ) { query, formatFilter, sort, asc, grid ->
+        FilterState(query, formatFilter, sort, asc, grid)
+    }
+
+    val uiState: StateFlow<LibraryUiState> = combine(
+        repository.allDocuments,
+        _filterState
+    ) { docs, filter ->
         var filtered = docs
 
-        if (query.isNotBlank()) {
-            filtered = filtered.filter { it.displayName.contains(query, ignoreCase = true) }
+        if (filter.query.isNotBlank()) {
+            filtered = filtered.filter { it.displayName.contains(filter.query, ignoreCase = true) }
         }
 
-        if (formatFilter != null) {
-            filtered = filtered.filter { it.format == formatFilter }
+        if (filter.formatFilter != null) {
+            filtered = filtered.filter { it.format == filter.formatFilter }
         }
 
-        filtered = when (sort) {
-            SortOption.NAME -> if (asc) filtered.sortedBy { it.displayName.lowercase() } else filtered.sortedByDescending { it.displayName.lowercase() }
-            SortOption.DATE -> if (asc) filtered.sortedBy { it.lastOpenedAt } else filtered.sortedByDescending { it.lastOpenedAt }
-            SortOption.SIZE -> if (asc) filtered.sortedBy { it.sizeBytes } else filtered.sortedByDescending { it.sizeBytes }
-            SortOption.TYPE -> if (asc) filtered.sortedBy { it.format.name } else filtered.sortedByDescending { it.format.name }
+        filtered = when (filter.sort) {
+            SortOption.NAME -> if (filter.isAscending) filtered.sortedBy { it.displayName.lowercase() } else filtered.sortedByDescending { it.displayName.lowercase() }
+            SortOption.DATE -> if (filter.isAscending) filtered.sortedBy { it.lastOpenedAt } else filtered.sortedByDescending { it.lastOpenedAt }
+            SortOption.SIZE -> if (filter.isAscending) filtered.sortedBy { it.sizeBytes } else filtered.sortedByDescending { it.sizeBytes }
+            SortOption.TYPE -> if (filter.isAscending) filtered.sortedBy { it.format.name } else filtered.sortedByDescending { it.format.name }
         }
 
         LibraryUiState(
             documents = filtered,
-            searchQuery = query,
-            selectedFormat = formatFilter,
-            sortBy = sort,
-            isAscending = asc,
-            isGridView = grid
+            searchQuery = filter.query,
+            selectedFormat = filter.formatFilter,
+            sortBy = filter.sort,
+            isAscending = filter.isAscending,
+            isGridView = filter.isGridView
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryUiState())
+
 
     val recentDocuments = repository.recentDocuments.stateIn(
         viewModelScope,
