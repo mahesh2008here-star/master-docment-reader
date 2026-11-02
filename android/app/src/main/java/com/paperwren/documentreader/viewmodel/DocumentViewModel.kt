@@ -36,7 +36,14 @@ class DocumentViewModel(
     private val repository: DocumentRepository
 ) : ViewModel() {
 
+    init {
+        viewModelScope.launch {
+            repository.seedSampleDocumentsIfEmpty()
+        }
+    }
+
     private val _searchQuery = MutableStateFlow("")
+
     private val _selectedFormat = MutableStateFlow<DocumentFormat?>(null)
     private val _sortBy = MutableStateFlow(SortOption.DATE)
     private val _isAscending = MutableStateFlow(false)
